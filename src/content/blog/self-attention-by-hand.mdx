@@ -1,0 +1,124 @@
+---
+title: "A slow walk through self-attention, *done by hand.*"
+subtitle: "We derive the attention operator from first principles — queries, keys, values, the softmax trick and why √dₖ shows up — then implement it in 40 lines of numpy and compare against a production kernel."
+kicker: "Essay · Series: Transformers, by hand · 01 / 06"
+tags:
+  - "Transformers"
+  - "Attention"
+  - "From scratch"
+  - "Numpy"
+  - "Math"
+primaryTag: "Transformers"
+author: "Aarav Mehta"
+date: "2026-04-18"
+readTime: "24 min read"
+heroCaption: "Fig. 01 — attention matrix visualized"
+heroDrop: "Hero figure"
+series:
+  name: "Transformers, by hand."
+  part: 1
+  total: 6
+  episodes:
+    - { label: "00 · Preface",       state: "past" }
+    - { label: "01 · Self-attention", state: "current" }
+    - { label: "02 · FlashAttention", state: "upcoming" }
+    - { label: "03 · Positional",     state: "upcoming" }
+    - { label: "04 · Layer-norm",     state: "upcoming" }
+    - { label: "05 · Training loop",  state: "upcoming" }
+toc:
+  - { id: "the-problem-stated-plainly", label: "The problem, stated plainly" }
+  - { id: "queries-keys-values",        label: "Queries, keys, values" }
+  - { id: "why-the-scaling-factor",     label: "Why the scaling factor?" }
+  - { id: "the-softmax-step",           label: "The softmax step" }
+  - { id: "multiple-heads",             label: "Multiple heads" }
+  - { id: "whats-next",                 label: "What's next" }
+nextUp:
+  - direction: "prev"
+    label: "Previous in series"
+    title: "*Preface* — why write transformers by hand?"
+    summary: "A short argument for resisting the urge to just import it."
+    href: "/blog/preface-why-write-transformers-by-hand"
+  - direction: "next"
+    label: "Next in series"
+    title: "FlashAttention, *explained IO-first*."
+    summary: "Attention from the memory hierarchy up. Why tiles change everything."
+    href: "/blog/flashattention-explained-io-first"
+---
+
+Self-attention has a reputation for being more complicated than it is. Most of the complexity lives in the surrounding machinery — the positional encodings, the multi-head stacking, the residual streams. The attention operator itself fits comfortably on one page, once we agree on what we're looking at.
+
+In this essay we'll do exactly that. We'll start from a deliberately under-specified question — *how should a token decide which other tokens to pay attention to?* — and, through a series of small, obvious decisions, arrive at the operator used in every modern transformer. No magic. No hand-waving. We'll implement each step in numpy as we go, and the final code will be forty lines long.
+
+If you've ever read the equations in "Attention Is All You Need" and felt like something was being kept from you, this essay is for you.
+
+## The problem, stated plainly
+
+Suppose we have a sequence of tokens — eight words, say — and each token has been embedded into a vector of dimension `d = 64`. That gives us a matrix `X` with shape `(8, 64)`. Our goal is to produce a new matrix `Y`, same shape, where each row has been "updated" with information drawn from the other rows.
+
+The most naive way to do this is to average every token's vector with every other token's vector. That's a convolution with a uniform kernel. It would let information propagate, but *every token would listen to every other token equally*, which is exactly what we don't want. A token should listen **selectively**.
+
+> The whole trick of attention is to let each token decide, on the fly, which of its neighbours it actually cares about — and by how much.
+
+So we need a weighted average, where the weights are learned (or at least, *derived*) from the tokens themselves. This is the essential idea. Everything else is bookkeeping.
+
+## Queries, keys, values
+
+To derive the weights, we introduce three linear projections of `X`:
+
+- **Q** — what each token is *looking for*
+- **K** — what each token *offers*
+- **V** — what each token will *hand over* if chosen
+
+These are three separate weight matrices — `W_Q`, `W_K`, `W_V` — each of shape `(d, d)`. The projections let the model learn three different "views" of the same token. That flexibility matters more than it first appears; we'll see why in §4.
+
+```
+# the entire forward pass, numpy, no dependencies
+import numpy as np
+
+def attention(X, Wq, Wk, Wv):
+    Q = X @ Wq              # (n, d)
+    K = X @ Wk              # (n, d)
+    V = X @ Wv              # (n, d)
+
+    scores = Q @ K.T                    # (n, n), raw similarities
+    scores /= np.sqrt(K.shape[-1])      # the √dₖ trick (see §3)
+
+    A = softmax(scores, axis=-1)        # (n, n), row-stochastic
+    return A @ V                        # (n, d), updated tokens
+```
+
+That's the whole thing. Seriously — *that's it*. The rest of this essay is a guided tour through why each line is the way it is.
+
+<Callout label="Note">
+  We&apos;re omitting the output projection <code>W_O</code> for now; it becomes meaningful once we stack heads. We&apos;ll reintroduce it in §5.
+</Callout>
+
+## Why the scaling factor?
+
+The `/ √dₖ` is the one piece of algebra that feels magical at first glance. It isn't. It's a variance correction, and the math is honestly kind of pleasant.
+
+When we compute `Q · Kᵀ`, each entry is a dot product of two `d`-dimensional vectors. If the entries of `Q` and `K` are roughly independent with unit variance, the variance of their dot product grows linearly with `d`. In our toy setting with `d = 64`, that means the raw scores will have a standard deviation around 8 — large enough that `softmax` will saturate, producing a distribution that's essentially a one-hot vector.
+
+Saturated softmax is a *disaster* for gradient flow: the gradient vanishes almost everywhere. Dividing by `√dₖ` returns the scores to unit variance, which keeps the softmax in its nice, differentiable middle range.
+
+So the choice of `√dₖ` isn't arbitrary, and it isn't tuned — it falls out of a one-line variance calculation. This is a pattern you'll see again in transformers: most of the "tricks" are *just* careful housekeeping about the scale of things.
+
+## The softmax step
+
+Once scaled, we apply `softmax` row-wise. The result, which we've been calling `A`, has a specific interpretation: each row is a probability distribution over the tokens in the sequence. Row `i` tells us how much attention token `i` is paying to every other token (including itself).
+
+This row-stochastic structure is important for two reasons. First, it means the output `A · V` is always a convex combination of the value vectors — no extrapolation, no exploding activations. Second, and more subtly, it forces the model to make trade-offs: paying more attention to one token necessarily means paying less to the others. That sparsity pressure is where a lot of the model's inductive bias comes from.
+
+## Multiple heads
+
+A single attention operator computes *one* set of Q/K/V projections. That's restrictive: different kinds of relationships (syntactic, semantic, positional) probably want different projections. The solution is embarrassingly direct — run `h` copies of the operator in parallel, each with its own `(W_Q, W_K, W_V)`, and concatenate the outputs.
+
+This is "multi-head attention". Each head can specialise, and the concatenation lets the model mix the specialised signals before the next layer. Implementation-wise, it's a reshape — you don't allocate `h` separate tensors, you just split the last dimension of `Q`, `K`, `V` into `h` chunks.
+
+---
+
+## What's next
+
+In the next essay we'll pick up where we left off and tackle the production side: why FlashAttention is fast, why it's more than an optimisation, and what the IO-aware mental model gets us that the textbook version doesn't.
+
+If you found something wrong, or found something you liked, I'd love to hear about it — [hello@aipro.dev](mailto:hello@aipro.dev).

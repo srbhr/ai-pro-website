@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>A slow walk through self-attention, done by hand — AI Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #d6ff3d;
+  --accent-ink: #0a0d07;
+  --bg:        oklch(0.985 0.004 90);
+  --bg-2:      oklch(0.965 0.006 90);
+  --bg-3:      oklch(0.94  0.008 90);
+  --ink:       oklch(0.18  0.01  270);
+  --ink-2:     oklch(0.38  0.008 270);
+  --ink-3:     oklch(0.58  0.006 270);
+  --hair:      oklch(0.88  0.006 270);
+  --chrome-1:  rgba(255,255,255,.95);
+  --chrome-2:  rgba(180,185,195,.65);
+  --chrome-3:  rgba(70,75,90,.25);
+  --card:      oklch(0.995 0.003 90);
+}
+html[data-theme="dark"] {
+  --bg:        oklch(0.14  0.008 260);
+  --bg-2:      oklch(0.17  0.01  260);
+  --bg-3:      oklch(0.20  0.012 260);
+  --ink:       oklch(0.97  0.003 90);
+  --ink-2:     oklch(0.80  0.004 90);
+  --ink-3:     oklch(0.62  0.006 90);
+  --hair:      oklch(0.30  0.01  260);
+  --chrome-1:  rgba(255,255,255,.35);
+  --chrome-2:  rgba(180,190,210,.18);
+  --chrome-3:  rgba(255,255,255,.04);
+  --card:      oklch(0.17 0.01 260);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+body {
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, Helvetica, Arial;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background .5s ease, color .5s ease;
+}
+a { color: inherit; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.mono { font-family: 'Geist Mono', monospace; }
+.serif { font-family: 'Fraunces', Georgia, serif; }
+
+/* ---------- chrome ring ---------- */
+.chrome {
+  position: relative;
+  border-radius: 12px;
+  background: var(--card);
+  isolation: isolate;
+}
+.chrome::before {
+  content: ""; position: absolute; inset: 0;
+  padding: 1px; border-radius: inherit;
+  background: conic-gradient(
+    from 210deg at 50% 50%,
+    var(--chrome-2) 0deg,
+    var(--chrome-1) 60deg,
+    var(--chrome-3) 130deg,
+    var(--chrome-1) 200deg,
+    var(--chrome-2) 270deg,
+    var(--chrome-3) 330deg,
+    var(--chrome-2) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none; z-index: 1;
+}
+
+/* ---------- nav (same vocabulary) ---------- */
+header.nav {
+  position: sticky; top: 0; z-index: 60;
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  background: color-mix(in oklab, var(--bg), transparent 35%);
+  border-bottom: 1px solid var(--hair);
+}
+.nav-inner {
+  max-width: 1240px; margin: 0 auto; padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.nav-links { display: flex; gap: 22px; }
+.nav-links a {
+  font-size: 12.5px; letter-spacing: .04em; color: var(--ink-2);
+  text-decoration: none; padding: 6px 2px; position: relative;
+}
+.nav-links a:hover { color: var(--ink); }
+.nav-links a.active { color: var(--ink); }
+.nav-links a.active::before { content: "◆"; font-size: 7px; color: var(--accent); margin-right: 6px; }
+
+.logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'Fraunces', serif;
+  font-weight: 500; font-size: 18px; letter-spacing: -.01em;
+  text-decoration: none; color: var(--ink);
+}
+.logo b { font-style: normal; font-weight: 500; font-family: 'Geist'; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.logo em { font-style: italic; font-family: 'Fraunces'; font-weight: 400; font-size: 18px; letter-spacing: -.01em; text-transform: none; }
+.logo-mark {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: radial-gradient(circle at 30% 25%, #fff, #c9ccd4 40%, #6c7280 70%, #20222a);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.3);
+  position: relative;
+}
+.theme-toggle {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 10px; cursor: pointer; color: var(--ink-2);
+  background: transparent; border: 0;
+}
+.theme-toggle:hover { color: var(--ink); }
+.theme-toggle svg { width: 15px; height: 15px; }
+
+/* ---------- reading progress ---------- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 0;
+  background: var(--accent); z-index: 100;
+  transition: width .08s linear;
+}
+
+/* ---------- article layout ---------- */
+.article-wrap {
+  max-width: 1240px; margin: 0 auto; padding: 60px 32px 0;
+  display: grid; grid-template-columns: 1fr 220px; gap: 64px;
+}
+@media (max-width: 960px) { .article-wrap { grid-template-columns: 1fr; } }
+
+/* back link */
+.back {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); text-decoration: none;
+  margin-bottom: 40px;
+}
+.back:hover { color: var(--ink); }
+.back::before { content: "←"; }
+
+/* ---------- header block per wireframe ---------- */
+.post-header { max-width: 760px; }
+
+.kicker {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 22px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.kicker .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+h1.title {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  margin: 0 0 22px;
+  text-wrap: balance;
+  font-variation-settings: "opsz" 144;
+}
+h1.title .i { font-style: italic; font-weight: 400; }
+
+p.subtitle {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(18px, 2.2vw, 24px);
+  line-height: 1.45;
+  color: var(--ink-2);
+  margin: 0 0 26px;
+  max-width: 620px;
+  text-wrap: pretty;
+  font-variation-settings: "opsz" 60;
+}
+
+/* pill tags */
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 34px; }
+.tag {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 6px 11px; border-radius: 999px;
+  background: var(--card);
+  text-decoration: none;
+  transition: color .2s, background .2s;
+}
+.tag:hover { color: var(--ink); background: var(--bg-2); }
+.tag.primary { color: var(--accent-ink); background: var(--accent); }
+.tag.primary:hover { background: var(--accent); }
+
+/* byline row */
+.byline {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 36px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.byline .avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #fff, #c9ccd4 40%, #6c7280 70%, #20222a);
+  flex-shrink: 0;
+}
+.byline .sep { opacity: .5; }
+.byline .author { color: var(--ink); text-transform: none; letter-spacing: 0; font-family: 'Geist'; font-size: 13px; }
+
+/* hero image */
+.hero-img {
+  width: 100%; aspect-ratio: 16/9;
+  border-radius: 14px; overflow: hidden;
+  position: relative;
+  margin-bottom: 60px;
+}
+.hero-img .placeholder {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--bg-2), transparent 0%),
+      color-mix(in oklab, var(--bg-2), transparent 0%) 10px,
+      color-mix(in oklab, var(--bg-3), transparent 0%) 10px,
+      color-mix(in oklab, var(--bg-3), transparent 0%) 20px
+    );
+}
+.hero-img .placeholder svg {
+  width: 72%; height: 72%;
+}
+.hero-img .caption {
+  position: absolute; left: 20px; bottom: 18px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hero-img .drop {
+  position: absolute; right: 20px; top: 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 10px; border-radius: 999px;
+  background: color-mix(in oklab, var(--card), transparent 20%);
+}
+
+/* ---------- article body ---------- */
+.post-body {
+  max-width: 680px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+.post-body > * + * { margin-top: 1.3em; }
+.post-body p { margin: 0; text-wrap: pretty; }
+.post-body p.lede {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: 22px; line-height: 1.55;
+  color: var(--ink);
+  font-variation-settings: "opsz" 60;
+}
+.post-body p.lede::first-letter {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 3.4em;
+  float: left;
+  line-height: .9;
+  margin: 8px 12px 0 0;
+  color: var(--ink);
+}
+.post-body h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  margin: 64px 0 16px;
+  scroll-margin-top: 80px;
+  font-variation-settings: "opsz" 144;
+}
+.post-body h2 .i { font-style: italic; font-weight: 300; }
+.post-body h2::before {
+  content: "§"; color: var(--ink-3); font-style: italic;
+  margin-right: 12px; font-size: 24px;
+  vertical-align: .08em;
+}
+.post-body h3 {
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: .01em;
+  color: var(--ink);
+  margin: 40px 0 6px;
+  text-transform: none;
+}
+.post-body a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--hair); }
+.post-body a:hover { text-decoration-color: var(--accent); }
+.post-body strong { color: var(--ink); font-weight: 500; }
+.post-body em { font-family: 'Fraunces', serif; font-style: italic; font-weight: 400; font-size: 1.02em; color: var(--ink); }
+
+/* pull quote */
+.post-body blockquote {
+  margin: 40px 0;
+  padding: 0 0 0 28px;
+  border-left: 2px solid var(--accent);
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.4;
+  color: var(--ink);
+  font-variation-settings: "opsz" 144;
+}
+.post-body blockquote p { margin: 0; }
+.post-body blockquote footer {
+  font-family: 'Geist Mono', monospace; font-style: normal;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 14px;
+}
+
+/* code block */
+pre.code {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px; line-height: 1.6;
+  padding: 22px 24px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  overflow-x: auto;
+  margin: 28px 0;
+}
+pre.code .k { color: color-mix(in oklab, var(--accent), var(--ink) 40%); }
+pre.code .s { color: #c98a4b; }
+pre.code .c { color: var(--ink-3); font-style: italic; }
+pre.code .n { color: var(--ink); }
+pre.code .muted { color: var(--ink-3); }
+html[data-theme="dark"] pre.code .s { color: #e0b089; }
+
+/* inline code */
+.post-body code {
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-2);
+  color: var(--ink);
+}
+
+/* figure */
+figure.fig {
+  margin: 40px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+figure.fig .body { aspect-ratio: 16/8; position: relative; background: var(--bg-2); overflow: hidden; }
+figure.fig figcaption {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 12px 16px;
+  border-top: 1px solid var(--hair);
+  background: var(--card);
+}
+
+/* list */
+.post-body ul, .post-body ol {
+  padding-left: 22px; margin: 0;
+}
+.post-body li { margin: 6px 0; }
+.post-body ul li::marker { color: var(--accent); }
+
+/* callout */
+.callout {
+  margin: 32px 0;
+  padding: 18px 22px;
+  border-radius: 12px;
+  background: var(--card);
+  display: flex; gap: 14px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.callout .mark {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent-ink);
+  background: var(--accent);
+  padding: 4px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+/* hr */
+.post-body hr {
+  border: 0;
+  text-align: center;
+  margin: 48px 0;
+  color: var(--ink-3);
+}
+.post-body hr::before {
+  content: "◆ ◆ ◆";
+  font-size: 8px;
+  letter-spacing: 1em;
+  color: var(--ink-3);
+}
+
+/* ---------- right rail ---------- */
+aside.rail {
+  position: sticky; top: 90px;
+  align-self: start;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3);
+  padding-top: 80px; /* aligns with first H2-ish */
+}
+aside.rail h6 {
+  margin: 0 0 14px; font-weight: 400; font-size: 10.5px; letter-spacing: .14em;
+}
+aside.rail ul { list-style: none; padding: 0; margin: 0; }
+aside.rail ul li { margin: 0; padding: 6px 0; border-top: 1px solid var(--hair); }
+aside.rail ul li:first-child { border-top: 0; }
+aside.rail a {
+  display: block; text-decoration: none; color: var(--ink-3);
+  letter-spacing: .04em; text-transform: none; font-size: 12.5px;
+  padding: 2px 0;
+  font-family: 'Geist';
+  transition: color .2s;
+}
+aside.rail a:hover, aside.rail a.active { color: var(--ink); }
+aside.rail a.active::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: 3px; }
+
+aside.rail .block { margin-bottom: 34px; }
+
+aside.rail .series-card {
+  padding: 16px; border-radius: 12px; background: var(--card);
+}
+aside.rail .series-card .num { color: var(--accent-ink); background: var(--accent); padding: 3px 7px; border-radius: 4px; font-size: 10.5px; display: inline-block; margin-bottom: 10px; }
+aside.rail .series-card .title-ln {
+  font-family: 'Fraunces', serif; font-style: italic; font-weight: 400;
+  font-size: 16px; line-height: 1.3; color: var(--ink);
+  letter-spacing: -.01em; text-transform: none;
+  margin-bottom: 10px;
+}
+aside.rail .series-card .ep {
+  font-family: 'Geist'; font-size: 12px; letter-spacing: 0; text-transform: none;
+  color: var(--ink-2);
+  padding: 4px 0;
+  display: flex; justify-content: space-between;
+}
+aside.rail .series-card .ep.cur { color: var(--ink); }
+aside.rail .series-card .ep .n { color: var(--ink-3); font-family: 'Geist Mono', monospace; font-size: 11px; }
+
+/* ---------- footer-of-post / up-next ---------- */
+.post-foot {
+  max-width: 680px;
+  margin-top: 72px;
+  padding-top: 32px;
+  border-top: 1px solid var(--hair);
+}
+.share {
+  display: flex; gap: 8px; margin-bottom: 48px;
+}
+.share a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-2); text-decoration: none;
+  background: var(--card);
+}
+.share a:hover { color: var(--ink); }
+
+.next-up {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-top: 20px;
+}
+@media (max-width: 720px) { .next-up { grid-template-columns: 1fr; } }
+.next-up .next-card {
+  padding: 22px; border-radius: 12px;
+  text-decoration: none; color: var(--ink);
+  transition: transform .2s;
+}
+.next-up .next-card:hover { transform: translateY(-2px); }
+.next-up .next-card .dir {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.next-up .next-card .dir .a { color: var(--accent); }
+.next-up .next-card .ttl {
+  font-family: 'Fraunces', serif;
+  font-weight: 400; font-size: 20px; line-height: 1.2;
+  letter-spacing: -.01em;
+  margin: 0 0 8px;
+}
+.next-up .next-card .ttl .i { font-style: italic; font-weight: 300; }
+.next-up .next-card .sum {
+  font-size: 13.5px; color: var(--ink-2);
+  margin: 0;
+}
+
+/* ---------- global footer (slim) ---------- */
+footer.site {
+  margin-top: 96px;
+  padding: 36px 0;
+  border-top: 1px solid var(--hair);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+footer.site .wrap {
+  max-width: 1240px; margin: 0 auto; padding: 0 32px;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  flex-wrap: wrap;
+}
+footer.site a { text-decoration: none; color: var(--ink-3); margin-right: 18px; }
+footer.site a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- ================= NAV ================= -->
+<header class="nav">
+  <div class="nav-inner">
+    <nav class="nav-links">
+      <a href="AI%20Pro.html#blogs" class="active">Read blogs</a>
+      <a href="AI%20Pro.html#about">About</a>
+    </nav>
+    <div style="flex:1"></div>
+    <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="themeIcon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+    <a href="AI%20Pro.html" class="logo" style="margin-left:8px">
+      <b>AI&nbsp;<em>Pro</em></b>
+      <span class="logo-mark" aria-hidden="true"></span>
+    </a>
+  </div>
+</header>
+
+<!-- ================= ARTICLE ================= -->
+<div class="article-wrap">
+  <article>
+
+    <a class="back" href="AI%20Pro.html#blogs">Back to essays</a>
+
+    <!-- WIREFRAME: Title / Subtitle / Tags / Hero image -->
+    <header class="post-header">
+      <div class="kicker"><span class="dot"></span> Essay · Series: Transformers, by hand · 01 / 06</div>
+
+      <h1 class="title">
+        A slow walk through self-attention, <span class="i">done by hand.</span>
+      </h1>
+
+      <p class="subtitle">
+        We derive the attention operator from first principles — queries, keys, values,
+        the softmax trick and why √d<sub>k</sub> shows up — then implement it in 40 lines of
+        numpy and compare against a production kernel.
+      </p>
+
+      <div class="tags">
+        <a href="#" class="tag primary">Transformers</a>
+        <a href="#" class="tag">Attention</a>
+        <a href="#" class="tag">From scratch</a>
+        <a href="#" class="tag">Numpy</a>
+        <a href="#" class="tag">Math</a>
+      </div>
+
+      <div class="byline">
+        <div class="avatar"></div>
+        <span class="author">Aarav Mehta</span>
+        <span class="sep">·</span>
+        <span>Apr 18, 2026</span>
+        <span class="sep">·</span>
+        <span>24 min read</span>
+      </div>
+    </header>
+
+    <!-- Hero image -->
+    <div class="hero-img chrome">
+      <div class="placeholder">
+        <svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="hg" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="var(--accent)" stop-opacity=".45"/>
+              <stop offset="1" stop-color="#7cb8ff" stop-opacity=".35"/>
+            </linearGradient>
+          </defs>
+          <!-- attention matrix mosaic -->
+          <g id="mx"></g>
+          <rect x="78" y="40" width="444" height="220" fill="none" stroke="currentColor" stroke-opacity=".3" rx="4"/>
+          <text x="78" y="30" font-family="Geist Mono, monospace" font-size="10" fill="currentColor" opacity=".6" letter-spacing="2">A = softmax( Q·Kᵀ / √dₖ )</text>
+          <text x="78" y="280" font-family="Geist Mono, monospace" font-size="10" fill="currentColor" opacity=".45" letter-spacing="2">FIG.01 — ATTENTION MATRIX, 12×12 HEAD</text>
+        </svg>
+      </div>
+      <span class="drop">Hero figure</span>
+      <span class="caption">Fig. 01 — attention matrix visualized</span>
+    </div>
+
+    <!-- ================= BODY ================= -->
+    <div class="post-body">
+      <p class="lede">Self-attention has a reputation for being more complicated than it is. Most of the complexity lives in the surrounding machinery — the positional encodings, the multi-head stacking, the residual streams. The attention operator itself fits comfortably on one page, once we agree on what we're looking at.</p>
+
+      <p>In this essay we'll do exactly that. We'll start from a deliberately under-specified question — <em>how should a token decide which other tokens to pay attention to?</em> — and, through a series of small, obvious decisions, arrive at the operator used in every modern transformer. No magic. No hand-waving. We'll implement each step in numpy as we go, and the final code will be forty lines long.</p>
+
+      <p>If you've ever read the equations in "Attention Is All You Need" and felt like something was being kept from you, this essay is for you.</p>
+
+      <h2 id="s1">The problem, <span class="i">stated plainly</span></h2>
+
+      <p>Suppose we have a sequence of tokens — eight words, say — and each token has been embedded into a vector of dimension <code>d = 64</code>. That gives us a matrix <code>X</code> with shape <code>(8, 64)</code>. Our goal is to produce a new matrix <code>Y</code>, same shape, where each row has been "updated" with information drawn from the other rows.</p>
+
+      <p>The most naive way to do this is to average every token's vector with every other token's vector. That's a convolution with a uniform kernel. It would let information propagate, but <em>every token would listen to every other token equally</em>, which is exactly what we don't want. A token should listen <strong>selectively</strong>.</p>
+
+      <blockquote>
+        <p>The whole trick of attention is to let each token decide, on the fly, which of its neighbours it actually cares about — and by how much.</p>
+        <footer>— §1, on what we're actually computing</footer>
+      </blockquote>
+
+      <p>So we need a weighted average, where the weights are learned (or at least, <em>derived</em>) from the tokens themselves. This is the essential idea. Everything else is bookkeeping.</p>
+
+      <h2 id="s2">Queries, keys, <span class="i">values</span></h2>
+
+      <p>To derive the weights, we introduce three linear projections of <code>X</code>:</p>
+
+      <ul>
+        <li><strong>Q</strong> — what each token is <em>looking for</em></li>
+        <li><strong>K</strong> — what each token <em>offers</em></li>
+        <li><strong>V</strong> — what each token will <em>hand over</em> if chosen</li>
+      </ul>
+
+      <p>These are three separate weight matrices — <code>W_Q</code>, <code>W_K</code>, <code>W_V</code> — each of shape <code>(d, d)</code>. The projections let the model learn three different "views" of the same token. That flexibility matters more than it first appears; we'll see why in §4.</p>
+
+      <pre class="code"><span class="c"># the entire forward pass, numpy, no dependencies</span>
+<span class="k">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="k">def</span> <span class="n">attention</span>(<span class="n">X</span>, <span class="n">Wq</span>, <span class="n">Wk</span>, <span class="n">Wv</span>):
+    <span class="n">Q</span> = <span class="n">X</span> <span class="muted">@</span> <span class="n">Wq</span>              <span class="c"># (n, d)</span>
+    <span class="n">K</span> = <span class="n">X</span> <span class="muted">@</span> <span class="n">Wk</span>              <span class="c"># (n, d)</span>
+    <span class="n">V</span> = <span class="n">X</span> <span class="muted">@</span> <span class="n">Wv</span>              <span class="c"># (n, d)</span>
+
+    <span class="n">scores</span> = <span class="n">Q</span> <span class="muted">@</span> <span class="n">K</span>.<span class="n">T</span>           <span class="c"># (n, n), raw similarities</span>
+    <span class="n">scores</span> <span class="muted">/=</span> <span class="n">np</span>.<span class="n">sqrt</span>(<span class="n">K</span>.<span class="n">shape</span>[-<span class="s">1</span>])   <span class="c"># the √dₖ trick (see §3)</span>
+
+    <span class="n">A</span> = <span class="n">softmax</span>(<span class="n">scores</span>, <span class="n">axis</span>=-<span class="s">1</span>)  <span class="c"># (n, n), row-stochastic</span>
+    <span class="k">return</span> <span class="n">A</span> <span class="muted">@</span> <span class="n">V</span>               <span class="c"># (n, d), updated tokens</span></pre>
+
+      <p>That's the whole thing. Seriously — <em>that's it</em>. The rest of this essay is a guided tour through why each line is the way it is.</p>
+
+      <div class="callout">
+        <span class="mark">Note</span>
+        <div>We're omitting the output projection <code>W_O</code> for now; it becomes meaningful once we stack heads. We'll reintroduce it in §5.</div>
+      </div>
+
+      <h2 id="s3">Why the <span class="i">scaling factor</span>?</h2>
+
+      <p>The <code>/ √dₖ</code> is the one piece of algebra that feels magical at first glance. It isn't. It's a variance correction, and the math is honestly kind of pleasant.</p>
+
+      <p>When we compute <code>Q · Kᵀ</code>, each entry is a dot product of two <code>d</code>-dimensional vectors. If the entries of <code>Q</code> and <code>K</code> are roughly independent with unit variance, the variance of their dot product grows linearly with <code>d</code>. In our toy setting with <code>d = 64</code>, that means the raw scores will have a standard deviation around 8 — large enough that <code>softmax</code> will saturate, producing a distribution that's essentially a one-hot vector.</p>
+
+      <p>Saturated softmax is a <em>disaster</em> for gradient flow: the gradient vanishes almost everywhere. Dividing by <code>√dₖ</code> returns the scores to unit variance, which keeps the softmax in its nice, differentiable middle range.</p>
+
+      <figure class="fig chrome">
+        <div class="body">
+          <svg viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">
+            <defs>
+              <linearGradient id="curve" x1="0" x2="1">
+                <stop offset="0" stop-color="var(--accent)" stop-opacity=".7"/>
+                <stop offset="1" stop-color="var(--accent)" stop-opacity=".2"/>
+              </linearGradient>
+            </defs>
+            <!-- two distributions overlaid -->
+            <g transform="translate(40,20)" font-family="Geist Mono, monospace" font-size="9" fill="currentColor">
+              <line x1="0" y1="180" x2="520" y2="180" stroke="currentColor" stroke-opacity=".3"/>
+              <line x1="0" y1="0" x2="0" y2="180" stroke="currentColor" stroke-opacity=".3"/>
+              <text x="0" y="195" opacity=".6">-6σ</text>
+              <text x="255" y="195" opacity=".6">0</text>
+              <text x="498" y="195" opacity=".6">+6σ</text>
+              <!-- unscaled: tall narrow spike -->
+              <path id="c1" d="" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="3 3" opacity=".65"/>
+              <!-- scaled: nice bell -->
+              <path id="c2" d="" fill="url(#curve)" stroke="currentColor" stroke-opacity=".7" stroke-width="1"/>
+              <text x="440" y="50" opacity=".7">scaled</text>
+              <text x="320" y="20" opacity=".6">unscaled</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption>Fig. 02 — score distributions before &amp; after scaling by √dₖ. The unscaled (dashed) spikes; the scaled one is softmax-friendly.</figcaption>
+      </figure>
+
+      <p>So the choice of <code>√dₖ</code> isn't arbitrary, and it isn't tuned — it falls out of a one-line variance calculation. This is a pattern you'll see again in transformers: most of the "tricks" are <em>just</em> careful housekeeping about the scale of things.</p>
+
+      <h2 id="s4">The <span class="i">softmax step</span></h2>
+
+      <p>Once scaled, we apply <code>softmax</code> row-wise. The result, which we've been calling <code>A</code>, has a specific interpretation: each row is a probability distribution over the tokens in the sequence. Row <code>i</code> tells us how much attention token <code>i</code> is paying to every other token (including itself).</p>
+
+      <p>This row-stochastic structure is important for two reasons. First, it means the output <code>A · V</code> is always a convex combination of the value vectors — no extrapolation, no exploding activations. Second, and more subtly, it forces the model to make trade-offs: paying more attention to one token necessarily means paying less to the others. That sparsity pressure is where a lot of the model's inductive bias comes from.</p>
+
+      <h2 id="s5">Multiple <span class="i">heads</span></h2>
+
+      <p>A single attention operator computes <em>one</em> set of Q/K/V projections. That's restrictive: different kinds of relationships (syntactic, semantic, positional) probably want different projections. The solution is embarrassingly direct — run <code>h</code> copies of the operator in parallel, each with its own <code>(W_Q, W_K, W_V)</code>, and concatenate the outputs.</p>
+
+      <p>This is "multi-head attention". Each head can specialise, and the concatenation lets the model mix the specialised signals before the next layer. Implementation-wise, it's a reshape — you don't allocate <code>h</code> separate tensors, you just split the last dimension of <code>Q</code>, <code>K</code>, <code>V</code> into <code>h</code> chunks.</p>
+
+      <hr>
+
+      <h2 id="s6">What's <span class="i">next</span></h2>
+
+      <p>In the next essay we'll pick up where we left off and tackle the production side: why FlashAttention is fast, why it's more than an optimisation, and what the IO-aware mental model gets us that the textbook version doesn't. If you enjoyed this, the rest of the series is <a href="AI%20Pro.html#blogs">linked here</a>.</p>
+
+      <p>If you found something wrong, or found something you liked, I'd love to hear about it — <a href="mailto:hello@aipro.dev">hello@aipro.dev</a>.</p>
+    </div>
+
+    <!-- Post foot -->
+    <div class="post-foot">
+      <div class="share">
+        <a href="#">Copy link</a>
+        <a href="#">Share on X</a>
+        <a href="#">Discuss on HN</a>
+        <a href="#">Cite as BibTeX</a>
+      </div>
+
+      <div class="kicker" style="margin-top:40px;margin-bottom:18px">Continue reading</div>
+
+      <div class="next-up">
+        <a href="#" class="next-card chrome">
+          <div class="dir"><span class="a">←</span> Previous in series</div>
+          <div class="ttl"><span class="i">Preface</span> — why write transformers by hand?</div>
+          <p class="sum">A short argument for resisting the urge to just import it.</p>
+        </a>
+        <a href="#" class="next-card chrome">
+          <div class="dir">Next in series <span class="a">→</span></div>
+          <div class="ttl">FlashAttention, <span class="i">explained IO-first</span>.</div>
+          <p class="sum">Attention from the memory hierarchy up. Why tiles change everything.</p>
+        </a>
+      </div>
+    </div>
+
+  </article>
+
+  <!-- Right rail: TOC + series -->
+  <aside class="rail">
+    <div class="block">
+      <h6>On this page</h6>
+      <ul id="toc">
+        <li><a href="#s1">The problem, stated plainly</a></li>
+        <li><a href="#s2">Queries, keys, values</a></li>
+        <li><a href="#s3">Why the scaling factor?</a></li>
+        <li><a href="#s4">The softmax step</a></li>
+        <li><a href="#s5">Multiple heads</a></li>
+        <li><a href="#s6">What's next</a></li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <h6>Series</h6>
+      <div class="series-card chrome">
+        <span class="num">06 PARTS</span>
+        <div class="title-ln">Transformers, by hand.</div>
+        <div class="ep"><span>00 · Preface</span><span class="n">—</span></div>
+        <div class="ep cur"><span>01 · Self-attention</span><span class="n">●</span></div>
+        <div class="ep"><span>02 · FlashAttention</span><span class="n">→</span></div>
+        <div class="ep"><span>03 · Positional</span><span class="n">→</span></div>
+        <div class="ep"><span>04 · Layer-norm</span><span class="n">→</span></div>
+        <div class="ep"><span>05 · Training loop</span><span class="n">→</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer class="site">
+  <div class="wrap">
+    <span>© MMXXVI · AI Pro</span>
+    <span>
+      <a href="AI%20Pro.html#blogs">Essays</a>
+      <a href="#">Series</a>
+      <a href="#">RSS</a>
+      <a href="AI%20Pro.html#about">About</a>
+    </span>
+    <span>Set in Fraunces &amp; Geist</span>
+  </div>
+</footer>
+
+<script>
+/* theme */
+const storedTheme = localStorage.getItem('aipro-theme') || 'light';
+document.documentElement.dataset.theme = storedTheme;
+const themeBtn = document.getElementById('themeBtn');
+const themeIcon = document.getElementById('themeIcon');
+function renderThemeIcon() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  themeIcon.innerHTML = dark
+    ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+    : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+}
+renderThemeIcon();
+themeBtn.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('aipro-theme', next);
+  renderThemeIcon();
+});
+
+/* hero matrix */
+(() => {
+  const svg = document.querySelector('#mx');
+  if (!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const cols = 12, rows = 12;
+  const x0 = 84, y0 = 46, size = 36;
+  // build a soft diagonal-heavy pattern
+  for (let r=0; r<rows; r++) {
+    for (let c=0; c<cols; c++) {
+      const dist = Math.abs(r - c);
+      const base = Math.exp(-dist*0.5);
+      const v = Math.min(1, base * (0.7 + Math.random()*0.6));
+      const rect = document.createElementNS(NS, 'rect');
+      rect.setAttribute('x', x0 + c*size);
+      rect.setAttribute('y', y0 + r*size);
+      rect.setAttribute('width', size-3);
+      rect.setAttribute('height', size-3);
+      rect.setAttribute('rx', 2);
+      rect.setAttribute('fill', 'url(#hg)');
+      rect.setAttribute('fill-opacity', (0.12 + v*0.85).toFixed(2));
+      svg.appendChild(rect);
+    }
+  }
+})();
+
+/* figure 2 curves */
+(() => {
+  const c1 = document.getElementById('c1');
+  const c2 = document.getElementById('c2');
+  if (!c1 || !c2) return;
+  // gaussian points
+  function gaussPath(sigma, amp, w=520, h=180) {
+    let d = `M 0 ${h}`;
+    for (let x=0; x<=w; x+=4) {
+      const t = (x - w/2) / (w/12); // -6..6 sigma axis
+      const y = h - amp * Math.exp(-(t*t)/(2*sigma*sigma));
+      d += ` L ${x} ${y.toFixed(1)}`;
+    }
+    d += ` L ${w} ${h} Z`;
+    return d;
+  }
+  c1.setAttribute('d', gaussPath(0.4, 170));
+  c2.setAttribute('d', gaussPath(1.8, 120));
+})();
+
+/* reading progress */
+const prog = document.getElementById('progress');
+function updateProgress() {
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+  prog.style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+updateProgress();
+
+/* TOC active section */
+const tocLinks = [...document.querySelectorAll('#toc a')];
+const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href')));
+function updateTOC() {
+  const y = window.scrollY + 120;
+  let idx = 0;
+  sections.forEach((s,i) => { if (s && s.offsetTop <= y) idx = i; });
+  tocLinks.forEach((a,i) => a.classList.toggle('active', i === idx));
+}
+window.addEventListener('scroll', updateTOC, { passive: true });
+updateTOC();
+</script>
+
+</body>
+</html>
