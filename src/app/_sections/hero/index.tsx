@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Grain } from "@/components/shader/Grain";
 import { Shader } from "@/components/shader/Shader";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Topics } from "./Topics";
 
 export function Hero() {
@@ -17,9 +17,12 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 -bottom-px z-[1] h-[140px] bg-[linear-gradient(180deg,transparent,var(--bg))]"
       />
 
-      <div className="wrap relative z-[2] mx-auto max-w-[920px] text-center">
+      <div className="relative z-[2] mx-auto max-w-[920px] px-8 text-center">
         <span className="font-mono mb-7 inline-flex items-center gap-2.5 rounded-full bg-[color-mix(in_oklab,var(--card),transparent_20%)] px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] text-ink-2">
-          <span aria-hidden className="pulse-dot" />
+          <span
+            aria-hidden
+            className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent),transparent_75%)]"
+          />
           Issue 14 · new essay every tuesday
         </span>
 
@@ -38,12 +41,12 @@ export function Hero() {
         </p>
 
         <div className="inline-flex items-center gap-2.5">
-          <Link href="#blogs" className="btn btn-primary">
-            <span className="arrow">→</span> Read the blogs
-          </Link>
-          <Link href="/about" className="btn btn-ghost">
+          <ButtonLink href="#blogs" variant="primary" icon="→">
+            Read the blogs
+          </ButtonLink>
+          <ButtonLink href="/about" variant="ghost">
             About the publication
-          </Link>
+          </ButtonLink>
         </div>
 
         <Topics />

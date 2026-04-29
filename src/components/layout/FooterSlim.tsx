@@ -3,7 +3,7 @@ import Link from "next/link";
 export function FooterSlim() {
   return (
     <footer className="font-mono mt-24 border-t border-hair py-9 text-[11px] uppercase tracking-[0.1em] text-ink-3">
-      <div className="wrap flex flex-wrap items-center justify-between gap-6">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-6 px-8">
         <span>© MMXXVI · AI Pro</span>
         <span>
           <Link href="/blog" className="mr-[18px] hover:text-ink">

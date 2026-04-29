@@ -25,7 +25,7 @@ export default async function BlogIndexPage() {
     <>
       <Header variant="blog" />
 
-      <main className="wrap pt-[60px] pb-20">
+      <main className="mx-auto max-w-[1240px] px-8 pt-[60px] pb-20">
         {/* ============ Header ============ */}
         <header className="mb-24 max-w-[720px]">
           <div className="font-mono mb-6 inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.14em] text-ink-3">

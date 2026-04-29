@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Shader } from "@/components/shader/Shader";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 
 export function AboutCTA() {
   return (
@@ -27,12 +27,12 @@ export function AboutCTA() {
           that took a year to understand — we&apos;d love to help you write it down.
         </p>
         <div className="inline-flex gap-2.5">
-          <a className="btn btn-primary" href="mailto:pitch@aipro.dev">
-            <span className="arrow">→</span> Pitch an essay
-          </a>
-          <Link className="btn" href="/blog">
+          <ButtonLink href="mailto:pitch@aipro.dev" variant="primary" icon="→">
+            Pitch an essay
+          </ButtonLink>
+          <ButtonLink href="/blog">
             Read the blogs
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     </div>

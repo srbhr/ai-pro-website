@@ -32,7 +32,7 @@ const columns = [
 export function FooterFat() {
   return (
     <footer id="about" className="mt-20 pt-12 pb-10">
-      <div className="wrap">
+      <div className="mx-auto max-w-[1240px] px-8">
         <div className="flex flex-wrap items-start justify-between gap-10">
           <div className="max-w-[360px]">
             <Logo />

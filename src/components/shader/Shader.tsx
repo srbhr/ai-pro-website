@@ -15,10 +15,14 @@ type ShaderProps = {
  * (e.g. `absolute -top-[10%] -right-[5%] -bottom-[20%] -left-[5%]`).
  */
 export function Shader({ variant = "caustics", seed = 0, className, style }: ShaderProps) {
+  const classes = className
+    ? `shader pointer-events-none saturate-[1.05] ${className}`
+    : "shader pointer-events-none saturate-[1.05]";
+
   return (
     <div
       aria-hidden
-      className={className ? `shader ${className}` : "shader"}
+      className={classes}
       style={style}
       data-shader-variant={variant}
       data-shader-seed={seed}

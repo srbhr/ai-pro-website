@@ -15,7 +15,7 @@ export function AboutHero() {
         className="pointer-events-none absolute inset-x-0 -bottom-px z-[1] h-[180px] bg-[linear-gradient(180deg,transparent,var(--bg))]"
       />
 
-      <div className="wrap relative z-[2] max-w-[820px]">
+      <div className="relative z-[2] max-w-[820px] px-8">
         <div className="font-mono mb-[22px] inline-flex items-center gap-2.5 text-[11px] uppercase tracking-[0.14em] text-ink-3">
           <span aria-hidden className="h-[5px] w-[5px] rounded-full bg-accent" />
           <span>The people · the principles</span>

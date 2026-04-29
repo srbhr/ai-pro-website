@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { Shader } from "@/components/shader/Shader";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 
 export function BigCTA() {
   return (
-    <div className="wrap">
+    <div className="mx-auto max-w-[1240px] px-8">
       <div className="chrome relative mt-[72px] overflow-hidden rounded-2xl px-10 py-[72px] text-center">
         <Shader
           variant="caustics"
@@ -23,9 +23,9 @@ export function BigCTA() {
             No newsletter pop-ups. No login. Just the essays — open on any device, dark or
             light, as long as you have coffee.
           </p>
-          <Link href="#blogs" className="btn btn-primary">
-            <span className="arrow">→</span> Read the blogs
-          </Link>
+          <ButtonLink href="#blogs" variant="primary" icon="→">
+            Read the blogs
+          </ButtonLink>
         </div>
       </div>
     </div>

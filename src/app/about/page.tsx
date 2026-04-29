@@ -20,15 +20,15 @@ export default function AboutPage() {
     <>
       <Header variant="about" />
       <AboutHero />
-      <section className="wrap">
+      <section className="mx-auto max-w-[1240px] px-8">
         <Manifesto />
         <Stats />
       </section>
-      <section className="wrap">
+      <section className="mx-auto max-w-[1240px] px-8">
         <Team />
         <Contributors />
       </section>
-      <section className="wrap">
+      <section className="mx-auto max-w-[1240px] px-8">
         <Colophon />
         <AboutCTA />
       </section>

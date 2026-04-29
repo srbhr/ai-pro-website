@@ -8,7 +8,7 @@ import { RagDiagram } from "./covers/RagDiagram";
 export function BlogGrid() {
   return (
     <section id="blogs" className="relative pt-[120px] pb-[80px]">
-      <div className="wrap">
+      <div className="mx-auto max-w-[1240px] px-8">
         <div className="mb-12 flex items-end justify-between gap-8">
           <h2 className="font-serif m-0 max-w-[680px] text-[clamp(34px,4.5vw,56px)] font-light leading-none tracking-[-0.025em]">
             Recent <span className="italic">writing</span>, picked
