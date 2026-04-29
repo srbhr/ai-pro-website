@@ -10,6 +10,10 @@ export type PostMeta = {
   description: string;
   date: string;
   tags: string[];
+  primaryTag?: string;
+  author?: string;
+  readTime?: string;
+  kicker?: string;
 };
 
 export async function listPosts(): Promise<PostMeta[]> {
@@ -24,9 +28,13 @@ export async function listPosts(): Promise<PostMeta[]> {
         return {
           slug,
           title: String(data.title ?? slug),
-          description: String(data.description ?? ""),
+          description: String(data.subtitle ?? data.description ?? ""),
           date: String(data.date ?? ""),
           tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+          primaryTag: data.primaryTag ? String(data.primaryTag) : undefined,
+          author: data.author ? String(data.author) : undefined,
+          readTime: data.readTime ? String(data.readTime) : undefined,
+          kicker: data.kicker ? String(data.kicker) : undefined,
         } satisfies PostMeta;
       }),
   );
@@ -36,4 +44,15 @@ export async function listPosts(): Promise<PostMeta[]> {
 export async function listSlugs(): Promise<string[]> {
   const entries = await fs.readdir(BLOG_DIR);
   return entries.filter((f) => f.endsWith(".mdx")).map((f) => f.replace(/\.mdx$/, ""));
+}
+
+/** Count posts per tag, sorted descending. */
+export function tagCounts(posts: PostMeta[]): Array<{ tag: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const p of posts) {
+    for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }

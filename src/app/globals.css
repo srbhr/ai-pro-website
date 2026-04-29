@@ -1,38 +1,38 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ---------------------------------------------------------------- */
 /* Theme — fonts, colors mapped to runtime CSS vars, keyframes        */
 /* ---------------------------------------------------------------- */
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Helvetica, Arial;
-  --font-serif: var(--font-source-serif), "Cambria", Georgia, serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+	--font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Helvetica, Arial;
+	--font-serif: var(--font-source-serif), 'Cambria', Georgia, serif;
+	--font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
 
-  /* colors → Tailwind utilities: bg-bg, text-ink-2, border-hair, bg-accent, etc. */
-  --color-bg: var(--bg);
-  --color-bg-2: var(--bg-2);
-  --color-bg-3: var(--bg-3);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-hair: var(--hair);
-  --color-card: var(--card);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
+	/* colors → Tailwind utilities: bg-bg, text-ink-2, border-hair, bg-accent, etc. */
+	--color-bg: var(--bg);
+	--color-bg-2: var(--bg-2);
+	--color-bg-3: var(--bg-3);
+	--color-ink: var(--ink);
+	--color-ink-2: var(--ink-2);
+	--color-ink-3: var(--ink-3);
+	--color-hair: var(--hair);
+	--color-card: var(--card);
+	--color-accent: var(--accent);
+	--color-accent-ink: var(--accent-ink);
 
-  --animate-marquee: marquee 38s linear infinite;
-  --animate-pulse-dot: pulse-dot 2.2s infinite;
+	--animate-marquee: marquee 38s linear infinite;
+	--animate-pulse-dot: pulse-dot 2.2s infinite;
 }
 
 @keyframes pulse-dot {
-  50% {
-    box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent), transparent 90%);
-  }
+	50% {
+		box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent), transparent 90%);
+	}
 }
 @keyframes marquee {
-  to {
-    transform: translateX(-50%);
-  }
+	to {
+		transform: translateX(-50%);
+	}
 }
 
 @custom-variant dark (&:where([data-theme="dark"] *, [data-theme="dark"]));
@@ -41,73 +41,75 @@
 /* Runtime tokens — switchable via [data-theme]                       */
 /* ---------------------------------------------------------------- */
 :root {
-  --accent: #d6ff3d;
-  --accent-ink: #0a0d07;
+	--accent: #d6ff3d;
+	--accent-ink: #0a0d07;
 
-  --bg: oklch(0.985 0.004 90);
-  --bg-2: oklch(0.965 0.006 90);
-  --bg-3: oklch(0.94 0.008 90);
-  --ink: oklch(0.18 0.01 270);
-  --ink-2: oklch(0.38 0.008 270);
-  --ink-3: oklch(0.58 0.006 270);
-  --hair: oklch(0.88 0.006 270);
-  --card: oklch(0.995 0.003 90);
+	--bg: oklch(0.985 0.004 90);
+	--bg-2: oklch(0.965 0.006 90);
+	--bg-3: oklch(0.94 0.008 90);
+	--ink: oklch(0.18 0.01 270);
+	--ink-2: oklch(0.38 0.008 270);
+	--ink-3: oklch(0.58 0.006 270);
+	--hair: oklch(0.88 0.006 270);
+	--card: oklch(0.995 0.003 90);
 
-  --chrome-1: rgba(255, 255, 255, 0.95);
-  --chrome-2: rgba(180, 185, 195, 0.65);
-  --chrome-3: rgba(70, 75, 90, 0.25);
+	--chrome-1: rgba(255, 255, 255, 0.95);
+	--chrome-2: rgba(180, 185, 195, 0.65);
+	--chrome-3: rgba(70, 75, 90, 0.25);
 
-  --shader-opacity: 1;
+	--shader-opacity: 1;
 }
 
-html[data-theme="dark"] {
-  --bg: oklch(0.14 0.008 260);
-  --bg-2: oklch(0.17 0.01 260);
-  --bg-3: oklch(0.2 0.012 260);
-  --ink: oklch(0.97 0.003 90);
-  --ink-2: oklch(0.8 0.004 90);
-  --ink-3: oklch(0.62 0.006 90);
-  --hair: oklch(0.3 0.01 260);
-  --card: oklch(0.17 0.01 260);
+html[data-theme='dark'] {
+	--bg: oklch(0.14 0.008 260);
+	--bg-2: oklch(0.17 0.01 260);
+	--bg-3: oklch(0.2 0.012 260);
+	--ink: oklch(0.97 0.003 90);
+	--ink-2: oklch(0.8 0.004 90);
+	--ink-3: oklch(0.62 0.006 90);
+	--hair: oklch(0.3 0.01 260);
+	--card: oklch(0.17 0.01 260);
 
-  --chrome-1: rgba(255, 255, 255, 0.35);
-  --chrome-2: rgba(180, 190, 210, 0.18);
-  --chrome-3: rgba(255, 255, 255, 0.04);
+	--chrome-1: rgba(255, 255, 255, 0.35);
+	--chrome-2: rgba(180, 190, 210, 0.18);
+	--chrome-3: rgba(255, 255, 255, 0.04);
 }
 
 /* ---------------------------------------------------------------- */
 /* Base                                                               */
 /* ---------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
 
 @layer base {
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    overflow-x: hidden;
-    transition: background 0.5s ease, color 0.5s ease;
-  }
-  ::selection {
-    background: var(--accent);
-    color: var(--accent-ink);
-  }
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
+	body {
+		background: var(--bg);
+		color: var(--ink);
+		font-family: var(--font-sans);
+		font-feature-settings: 'ss01', 'cv11';
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+		overflow-x: hidden;
+		transition:
+			background 0.5s ease,
+			color 0.5s ease;
+	}
+	::selection {
+		background: var(--accent);
+		color: var(--accent-ink);
+	}
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
 }
 
 /* ---------------------------------------------------------------- */
@@ -115,350 +117,359 @@ html[data-theme="dark"] {
 /* (pseudo-elements, keyframes, mask-composite, raw MDX DOM)          */
 /* ---------------------------------------------------------------- */
 @layer components {
-  /* Single global layout primitive used by every page */
-  .wrap {
-    max-width: 1240px;
-    margin-inline: auto;
-    padding-inline: 32px;
-  }
+	/* Single global layout primitive used by every page */
+	.wrap {
+		max-width: 1240px;
+		margin-inline: auto;
+		padding-inline: 32px;
+	}
 
-  /* Brushed-silver 1px ring. Pseudo-elements + mask-composite. */
-  .chrome {
-    position: relative;
-    border-radius: 12px;
-    background: var(--card);
-    isolation: isolate;
-  }
-  .chrome::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: conic-gradient(
-      from 210deg at 50% 50%,
-      var(--chrome-2) 0deg,
-      var(--chrome-1) 60deg,
-      var(--chrome-3) 130deg,
-      var(--chrome-1) 200deg,
-      var(--chrome-2) 270deg,
-      var(--chrome-3) 330deg,
-      var(--chrome-2) 360deg
-    );
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .chrome::after {
-    content: "";
-    position: absolute;
-    inset: 1px;
-    border-radius: calc(12px - 1px);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 30%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  html[data-theme="dark"] .chrome::after {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 40%);
-  }
+	/* Brushed-silver 1px ring. Pseudo-elements + mask-composite. */
+	.chrome {
+		position: relative;
+		border-radius: 12px;
+		background: var(--card);
+		isolation: isolate;
+	}
+	.chrome::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		padding: 1px;
+		border-radius: inherit;
+		background: conic-gradient(
+			from 210deg at 50% 50%,
+			var(--chrome-2) 0deg,
+			var(--chrome-1) 60deg,
+			var(--chrome-3) 130deg,
+			var(--chrome-1) 200deg,
+			var(--chrome-2) 270deg,
+			var(--chrome-3) 330deg,
+			var(--chrome-2) 360deg
+		);
+		-webkit-mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		pointer-events: none;
+		z-index: 1;
+	}
+	.chrome::after {
+		content: '';
+		position: absolute;
+		inset: 1px;
+		border-radius: calc(12px - 1px);
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 30%);
+		pointer-events: none;
+		z-index: 0;
+	}
+	html[data-theme='dark'] .chrome::after {
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 40%);
+	}
 
-  /* SVG-noise grain overlay (data-URL). */
-  .grain {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    opacity: 0.35;
-    mix-blend-mode: overlay;
-  }
-  html[data-theme="dark"] .grain {
-    opacity: 0.22;
-  }
+	/* SVG-noise grain overlay (data-URL). */
+	.grain {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+		opacity: 0.35;
+		mix-blend-mode: overlay;
+	}
+	html[data-theme='dark'] .grain {
+		opacity: 0.22;
+	}
 
-  /* Shader placeholder — real rendering added later. Position set by consumer. */
-  .shader {
-    pointer-events: none;
-    filter: saturate(1.05);
-    opacity: var(--shader-opacity);
-  }
+	/* Shader placeholder — real rendering added later. Position set by consumer. */
+	.shader {
+		pointer-events: none;
+		filter: saturate(1.05);
+		opacity: var(--shader-opacity);
+	}
 
-  /* Pulsing accent dot used in .eyebrow (pill) and .kicker (inline).
+	/* Pulsing accent dot used in .eyebrow (pill) and .kicker (inline).
      Animation can't live in utilities without redefining the keyframe. */
-  .pulse-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 75%);
-    animation: var(--animate-pulse-dot);
-  }
+	.pulse-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--accent);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 75%);
+		animation: var(--animate-pulse-dot);
+	}
 
-  /* Buttons. Reused in 8+ places with a pseudo-child accent arrow; CSS class
+	/* Buttons. Reused in 8+ places with a pseudo-child accent arrow; CSS class
      is more ergonomic than re-pasting the same className stack. */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    height: 44px;
-    padding: 0 20px;
-    border-radius: 11px;
-    font-family: inherit;
-    font-size: 13.5px;
-    letter-spacing: 0.01em;
-    font-weight: 500;
-    cursor: pointer;
-    border: 0;
-    background: var(--card);
-    color: var(--ink);
-    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
-  }
-  .btn:hover {
-    transform: translateY(-1px);
-  }
-  .btn .arrow {
-    width: 18px;
-    height: 18px;
-    display: grid;
-    place-items: center;
-    border-radius: 4px;
-    background: var(--accent);
-    color: var(--accent-ink);
-    transition: transform 0.2s ease;
-  }
-  .btn:hover .arrow {
-    transform: translateX(3px);
-  }
-  .btn-primary {
-    background: var(--ink);
-    color: var(--bg);
-  }
-  .btn-primary:hover {
-    background: color-mix(in oklab, var(--ink), var(--accent) 8%);
-  }
-  .btn-ghost {
-    background: transparent;
-    color: var(--ink-2);
-  }
-  .btn-ghost:hover {
-    color: var(--ink);
-  }
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		height: 44px;
+		padding: 0 20px;
+		border-radius: 11px;
+		font-family: inherit;
+		font-size: 13.5px;
+		letter-spacing: 0.01em;
+		font-weight: 500;
+		cursor: pointer;
+		border: 0;
+		background: var(--card);
+		color: var(--ink);
+		transition:
+			transform 0.15s ease,
+			background 0.15s ease,
+			color 0.15s ease;
+	}
+	.btn:hover {
+		transform: translateY(-1px);
+	}
+	.btn .arrow {
+		width: 18px;
+		height: 18px;
+		display: grid;
+		place-items: center;
+		border-radius: 4px;
+		background: var(--accent);
+		color: var(--accent-ink);
+		transition: transform 0.2s ease;
+	}
+	.btn:hover .arrow {
+		transform: translateX(3px);
+	}
+	.btn-primary {
+		background: var(--ink);
+		color: var(--bg);
+	}
+	.btn-primary:hover {
+		background: color-mix(in oklab, var(--ink), var(--accent) 8%);
+	}
+	.btn-ghost {
+		background: transparent;
+		color: var(--ink-2);
+	}
+	.btn-ghost:hover {
+		color: var(--ink);
+	}
 
-  /* Logo — metallic sphere needs radial + conic-gradient + ::after sheen.
+	/* Logo — metallic sphere needs radial + conic-gradient + ::after sheen.
      Not reasonable as utilities. */
-  .logo-mark {
-    position: relative;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    background: radial-gradient(circle at 30% 25%, #fff, #c9ccd4 40%, #6c7280 70%, #20222a);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-  .logo-mark::after {
-    content: "";
-    position: absolute;
-    inset: 3px;
-    border-radius: 4px;
-    background: conic-gradient(from 180deg, #e6e8ed, #8a8e98, #e6e8ed, #565b68, #e6e8ed);
-    mix-blend-mode: screen;
-    opacity: 0.7;
-  }
+	.logo-mark {
+		position: relative;
+		width: 22px;
+		height: 22px;
+		border-radius: 6px;
+		background: radial-gradient(circle at 30% 25%, #fff, #c9ccd4 40%, #6c7280 70%, #20222a);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+			0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+	.logo-mark::after {
+		content: '';
+		position: absolute;
+		inset: 3px;
+		border-radius: 4px;
+		background: conic-gradient(from 180deg, #e6e8ed, #8a8e98, #e6e8ed, #565b68, #e6e8ed);
+		mix-blend-mode: screen;
+		opacity: 0.7;
+	}
 
-  /* Nav pseudo-element hover underline + active ◆ prefix. */
-  .nav-link {
-    position: relative;
-    font-size: 12.5px;
-    letter-spacing: 0.04em;
-    color: var(--ink-2);
-    padding: 6px 2px;
-  }
-  .nav-link:hover {
-    color: var(--ink);
-  }
-  .nav-link::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: var(--ink);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-  .nav-link:hover::after {
-    transform: scaleX(1);
-  }
-  .nav-link.active {
-    color: var(--ink);
-  }
-  .nav-link.active::before {
-    content: "◆";
-    font-size: 7px;
-    color: var(--accent);
-    margin-right: 6px;
-  }
+	/* Nav pseudo-element hover underline + active ◆ prefix. */
+	.nav-link {
+		position: relative;
+		font-size: 12.5px;
+		letter-spacing: 0.04em;
+		color: var(--ink-2);
+		padding: 6px 2px;
+	}
+	.nav-link:hover {
+		color: var(--ink);
+	}
+	.nav-link::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 1px;
+		background: var(--ink);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.3s ease;
+	}
+	.nav-link:hover::after {
+		transform: scaleX(1);
+	}
+	.nav-link.active {
+		color: var(--ink);
+	}
+	.nav-link.active::before {
+		content: '◆';
+		font-size: 7px;
+		color: var(--accent);
+		margin-right: 6px;
+	}
 
-  /* Series-strip marquee — ::after "/" separator + keyframe marquee. */
-  .marquee-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    font-size: 13px;
-    color: var(--ink-2);
-  }
-  .marquee-item::after {
-    content: "/";
-    color: var(--hair);
-    margin-left: 22px;
-  }
+	/* Series-strip marquee — ::after "/" separator + keyframe marquee. */
+	.marquee-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		white-space: nowrap;
+		font-size: 13px;
+		color: var(--ink-2);
+	}
+	.marquee-item::after {
+		content: '/';
+		color: var(--hair);
+		margin-left: 22px;
+	}
 
-  /* --------------- post-body: styles for raw MDX-emitted DOM ---------------
+	/* --------------- post-body: styles for raw MDX-emitted DOM ---------------
      Markdown → <h2>/<p>/<em>/<blockquote> etc. have no classes, so we select
      them descendantly. Only kept here when utility equivalents fail:
      - pseudo-elements (§ prefix, ◆◆◆ hr)
      - ::first-letter drop cap
      - ::marker color
      - sibling-margin rhythm */
-  .post-body {
-    max-width: 680px;
-    font-size: 18px;
-    line-height: 1.7;
-    color: var(--ink-2);
-  }
-  .post-body > * + * {
-    margin-top: 1.3em;
-  }
-  .post-body p {
-    margin: 0;
-    text-wrap: pretty;
-  }
-  .post-body > p:first-of-type {
-    font-family: var(--font-serif);
-    font-weight: 300;
-    font-size: 22px;
-    line-height: 1.55;
-    color: var(--ink);
-    font-variation-settings: "opsz" 60;
-  }
-  .post-body > p:first-of-type::first-letter {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: 3.4em;
-    float: left;
-    line-height: 0.9;
-    margin: 8px 12px 0 0;
-    color: var(--ink);
-  }
-  .post-body h2 {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: 32px;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin: 64px 0 16px;
-    scroll-margin-top: 80px;
-    font-variation-settings: "opsz" 60;
-  }
-  .post-body h2::before {
-    content: "§";
-    color: var(--ink-3);
-    font-style: italic;
-    margin-right: 12px;
-    font-size: 24px;
-    vertical-align: 0.08em;
-  }
-  .post-body h3 {
-    font-family: var(--font-sans);
-    font-weight: 500;
-    font-size: 17px;
-    color: var(--ink);
-    margin: 40px 0 6px;
-  }
-  .post-body a {
-    color: var(--ink);
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
-    text-decoration-color: var(--hair);
-  }
-  .post-body a:hover {
-    text-decoration-color: var(--accent);
-  }
-  .post-body strong {
-    color: var(--ink);
-    font-weight: 500;
-  }
-  .post-body em {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    font-size: 1.02em;
-    color: var(--ink);
-  }
-  .post-body blockquote {
-    margin: 40px 0;
-    padding-left: 28px;
-    border-left: 2px solid var(--accent);
-    font-family: var(--font-serif);
-    font-weight: 300;
-    font-style: italic;
-    font-size: 24px;
-    line-height: 1.4;
-    color: var(--ink);
-  }
-  .post-body blockquote p {
-    margin: 0;
-  }
-  .post-body pre {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.6;
-    padding: 22px 24px;
-    border-radius: 12px;
-    background: var(--card);
-    color: var(--ink);
-    overflow-x: auto;
-    margin: 28px 0;
-  }
-  .post-body code {
-    font-family: var(--font-mono);
-    font-size: 0.88em;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--bg-2);
-    color: var(--ink);
-  }
-  .post-body pre code {
-    background: transparent;
-    padding: 0;
-    font-size: inherit;
-  }
-  .post-body ul,
-  .post-body ol {
-    padding-left: 22px;
-  }
-  .post-body li {
-    margin: 6px 0;
-  }
-  .post-body ul li::marker {
-    color: var(--accent);
-  }
-  .post-body hr {
-    border: 0;
-    text-align: center;
-    margin: 48px 0;
-  }
-  .post-body hr::before {
-    content: "◆ ◆ ◆";
-    font-size: 8px;
-    letter-spacing: 1em;
-    color: var(--ink-3);
-  }
+	.post-body {
+		max-width: 680px;
+		font-size: 18px;
+		line-height: 1.7;
+		color: var(--ink-2);
+	}
+	.post-body > * + * {
+		margin-top: 1.3em;
+	}
+	.post-body p {
+		margin: 0;
+		text-wrap: pretty;
+	}
+	.post-body > p:first-of-type {
+		font-family: var(--font-serif);
+		font-weight: 300;
+		font-size: 22px;
+		line-height: 1.55;
+		color: var(--ink);
+		font-variation-settings: 'opsz' 60;
+	}
+	.post-body > p:first-of-type::first-letter {
+		font-family: var(--font-serif);
+		font-weight: 400;
+		font-size: 3.4em;
+		float: left;
+		line-height: 0.9;
+		margin: 8px 12px 0 0;
+		color: var(--ink);
+	}
+	.post-body h2 {
+		font-family: var(--font-serif);
+		font-weight: 400;
+		font-size: 32px;
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+		color: var(--ink);
+		margin: 64px 0 16px;
+		scroll-margin-top: 80px;
+		font-variation-settings: 'opsz' 60;
+	}
+	.post-body h2::before {
+		content: '§';
+		color: var(--ink-3);
+		font-style: italic;
+		margin-right: 12px;
+		font-size: 24px;
+		vertical-align: 0.08em;
+	}
+	.post-body h3 {
+		font-family: var(--font-sans);
+		font-weight: 500;
+		font-size: 17px;
+		color: var(--ink);
+		margin: 40px 0 6px;
+	}
+	.post-body a {
+		color: var(--ink);
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 3px;
+		text-decoration-color: var(--hair);
+	}
+	.post-body a:hover {
+		text-decoration-color: var(--accent);
+	}
+	.post-body strong {
+		color: var(--ink);
+		font-weight: 500;
+	}
+	.post-body em {
+		font-family: var(--font-serif);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 1.02em;
+		color: var(--ink);
+	}
+	.post-body blockquote {
+		margin: 40px 0;
+		padding-left: 28px;
+		border-left: 2px solid var(--accent);
+		font-family: var(--font-serif);
+		font-weight: 300;
+		font-style: italic;
+		font-size: 24px;
+		line-height: 1.4;
+		color: var(--ink);
+	}
+	.post-body blockquote p {
+		margin: 0;
+	}
+	.post-body pre {
+		font-family: var(--font-mono);
+		font-size: 13px;
+		line-height: 1.6;
+		padding: 22px 24px;
+		border-radius: 12px;
+		background: var(--card);
+		color: var(--ink);
+		overflow-x: auto;
+		margin: 28px 0;
+	}
+	.post-body code {
+		font-family: var(--font-mono);
+		font-size: 0.88em;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background: var(--bg-2);
+		color: var(--ink);
+	}
+	.post-body pre code {
+		background: transparent;
+		padding: 0;
+		font-size: inherit;
+	}
+	.post-body ul,
+	.post-body ol {
+		padding-left: 22px;
+	}
+	.post-body li {
+		margin: 6px 0;
+	}
+	.post-body ul li::marker {
+		color: var(--accent);
+	}
+	.post-body hr {
+		border: 0;
+		text-align: center;
+		margin: 48px 0;
+	}
+	.post-body hr::before {
+		content: '◆ ◆ ◆';
+		font-size: 8px;
+		letter-spacing: 1em;
+		color: var(--ink-3);
+	}
 }

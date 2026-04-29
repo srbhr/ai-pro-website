@@ -1,0 +1,28 @@
+---
+title: "RAG that *actually* retrieves."
+subtitle: "A honest playbook: chunking that works, rerankers worth the latency, eval you can trust."
+kicker: "Playbook · RAG"
+tags:
+  - "RAG"
+  - "Retrieval"
+  - "Evaluation"
+  - "Playbook"
+primaryTag: "RAG"
+author: "Sofía Vargas"
+date: "2026-03-22"
+readTime: "20 min read"
+---
+
+Most "RAG pipelines" in production are two things in a trench coat: a slightly tuned vector index and a prompt that says "given this context, answer the question." When they fail — and they fail a lot — the failure is usually in the retrieval step, and the failure is usually invisible until someone reads the traces carefully.
+
+This playbook is about the parts of RAG that are not the index: chunking that respects the shape of the source, reranking that earns the latency you pay for it, and an evaluation harness that catches regressions before your users do. We include ablations on a real corpus (support tickets, ~400k docs) and the choices that moved resolution-at-1 more than a percentage point.
+
+## Three things, in this order
+
+1. Chunking. Most of the quality you can buy is bought here.
+2. A reranker. Small, cross-encoder-style, run over the top 50 — not the top 5.
+3. An eval set that your PM can sign off on, not just your ML team.
+
+## What we skip
+
+Nothing about graph RAG, agentic RAG, or any other RAG prefix. Those might be useful one day. Right now, the leverage is in the boring parts.

@@ -1,0 +1,26 @@
+---
+title: "Reading a *CUDA kernel* without flinching."
+subtitle: "Warps, tiles, shared memory, and the one mental model that finally made it click."
+kicker: "Deep-dive · CUDA"
+tags:
+  - "CUDA"
+  - "GPU"
+  - "Systems"
+  - "Kernels"
+primaryTag: "CUDA"
+author: "Priya Kapoor"
+date: "2026-04-04"
+readTime: "22 min read"
+---
+
+The first CUDA kernel you read will feel like a punch. `__global__`, `__shared__`, `__syncthreads`, tile sizes hard-coded as template parameters, index arithmetic that looks like someone lost a bet. It is worth pushing through anyway. Once you can read one CUDA kernel — really read it, not just squint at it — you can read all of them, and most of the mystique around "GPU programming" melts off.
+
+This essay is about that first reading. We take FlashAttention-2's forward pass and walk through it line by line. Not to re-derive FlashAttention (that essay is next in the series) but to build the mental model: what is a thread, what is a warp, what is a block, what lives in what memory, and what are the hardware constraints those decisions are reacting to.
+
+## Why the mental model helps
+
+Every micro-optimisation in a real kernel — register pressure, bank conflicts, warp divergence, coalesced loads — is a reaction to a specific hardware fact. Once those facts are in your head, the code reads like prose. Until then, it reads like hieroglyphics.
+
+## Prerequisites
+
+C++ you can read if you squint, and enough patience to sit with a single 200-line file for an hour. Everything else we will build up from there.

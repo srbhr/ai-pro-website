@@ -1,0 +1,26 @@
+---
+title: "Build your own *embedding model* in a weekend."
+subtitle: "Contrastive objectives, hard negatives, and when not to reach for a frontier API."
+kicker: "Tutorial · Embeddings"
+tags:
+  - "Embeddings"
+  - "Contrastive"
+  - "Tutorial"
+  - "Retrieval"
+primaryTag: "Embeddings"
+author: "Sofía Vargas"
+date: "2026-04-11"
+readTime: "18 min read"
+---
+
+Frontier embedding APIs are good at most things. They are also expensive, versioned beyond your control, and bound by rate limits that do not respect your actual workload. For a narrow domain — a product catalogue, a support corpus, a specific codebase — you can usually train something as good or better in a weekend, and it will keep working when the API price changes.
+
+This essay walks through that exercise end to end. We start with a small distilled base model, a few thousand positive pairs mined from your own data, and a contrastive objective. We talk about hard-negative mining properly — not the bag-of-tricks version, but the thing that actually matters once your batch is big enough. And we finish with an honest evaluation: MRR on your retrieval set, drift between dev and prod, and a few failure modes you will almost certainly hit.
+
+## What you will need
+
+A GPU with ~16 GB, a base model around 100M parameters, and a corpus where you can build a believable "these two things should be close" signal. That signal is the entire game. Everything else is training ceremony.
+
+## What this isn't
+
+A benchmark chase. We are not trying to beat `text-embedding-3-large` on MTEB. We are trying to build a model that works on *your* data, that you understand end to end, and that you can redeploy without paging oncall.

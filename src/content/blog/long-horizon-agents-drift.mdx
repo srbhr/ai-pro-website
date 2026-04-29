@@ -1,0 +1,26 @@
+---
+title: "Why *long-horizon* agents still drift."
+subtitle: "A post-mortem of six failure modes, with receipts from production traces."
+kicker: "Essay · Agents"
+tags:
+  - "Agents"
+  - "Evaluation"
+  - "Post-mortem"
+  - "Production"
+primaryTag: "Agents"
+author: "Sofía Vargas"
+date: "2026-03-28"
+readTime: "14 min read"
+---
+
+Long-horizon agents — the kind that plan across more than a handful of steps — have a charming property: they work in the demo, and they break in the wild. Not occasionally. Consistently. The demo trajectory and the production trajectory diverge quickly, and the distribution of that divergence has *patterns* worth naming.
+
+This essay is a post-mortem of six failure modes we have seen repeatedly in shipped agent systems. None of them are "the model is not smart enough." All of them are specification problems, evaluation problems, or memory problems that look like reasoning problems from the outside. That distinction matters because the fix for a specification problem is writing; the fix for a reasoning problem is a bigger model.
+
+## The six we see most often
+
+We go through each with an anonymised trace, the hypothesis we had when we first saw it, and what the root cause turned out to be. The patterns recur enough that we think it is worth reading with your own system in mind.
+
+## What this is not
+
+A benchmark sweep. We are not claiming model *X* drifts more than model *Y*. Everything we describe is reproducible across the frontier models we have production access to. Model choice moves the cliff — it does not remove it.
